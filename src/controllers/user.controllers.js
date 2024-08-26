@@ -1,8 +1,8 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { User } from "../models/user.models";
-import { uploadOnCloudinary } from "../utils/cloudinary";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { User } from "../models/user.models.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const registerUser = asyncHandler( async (res, req) => {
     //get details from user
@@ -15,7 +15,8 @@ const registerUser = asyncHandler( async (res, req) => {
     //check if user is present or not in DB
     //return res
 
-   const{fullname, email, username, password} = req.body
+   const {fullname, email, username, password} = req.body
+   
 
    if(
     [fullname,email, username, password].some((field) => field?.trim() === "" )
@@ -23,7 +24,7 @@ const registerUser = asyncHandler( async (res, req) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existedUser =  User.findOne({
+    const existedUser = await User.findOne({
         $or: [{username}, {email}]
     })
 
@@ -65,4 +66,4 @@ const registerUser = asyncHandler( async (res, req) => {
    )
 })
 
-export {registerUser}
+export  {registerUser}
