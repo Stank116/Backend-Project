@@ -16,7 +16,7 @@ const registerUser = asyncHandler( async (res, req) => {
     //return res
 
    const {fullname, email, username, password} = req.body
-   
+   console.log("email: ", email)
 
    if(
     [fullname,email, username, password].some((field) => field?.trim() === "" )
@@ -33,14 +33,22 @@ const registerUser = asyncHandler( async (res, req) => {
     }
 
     const avatarLocalPath = req.files?.avatar[0].path;
-    const coverImaegeLocalPath = req.files?.coverImage[0].path;
+   // const coverImageLocalPath = req.files?.coverImage[0].path;
+
+   let coverImageLocalPath;
+   if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+    coverImageLocalPath = req.files.coverImage[0].path;
+   }
+
+
+   
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required")
     }
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImaege = await uploadOnCloudinary(coverImaegeLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     if(!avatar){
         throw new ApiError(400, "Avatar file is required")
@@ -49,7 +57,7 @@ const registerUser = asyncHandler( async (res, req) => {
     const user = await User.create({
         fullname,
         avatar : avatar.url,
-        coverImaege : coverImaege?.url || " ",
+        coverImaege : coverImage?.url || " ",
         email,
         username : username.toLowerCase(),
         password
