@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.models.js";
-import { generateRefreshToken, generateAccessToken, isPasswordCorrect } from "../models/user.models.js";
+import {Subscription} from "../models/subscription.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jsonwebtoken from "jsonwebtoken"
 
@@ -73,7 +73,7 @@ const registerUser = asyncHandler( async (res, req) => {
     const user = await User.create({
         fullname,
         avatar : avatar.url,
-        coverImaege : coverImage?.url || " ",
+        coverImage : coverImage?.url || " ",
         email,
         username : username.toLowerCase(),
         password
@@ -330,6 +330,76 @@ const changeUserCoverImage = asyncHandler( async (req, res) => {
 
 })
 
+const getChannelProfile = asyncHandler(async (req, res) => {
+    const {username} = req.params
+    if(!username){
+        throw new ApiError(400, "Username not available")
+    }
+
+    const Channel = await  User.aggregate([
+    {
+        $match : {
+            username : username?.toLowerCase()
+        }
+    },
+    {
+        $lookup : {
+            from : "subscriptions",
+            localField : "_id",
+            foreignField : "channel",
+            as : "subscribers"
+        }
+    },
+    {
+        $lookup : {
+            from : "subscriptions",
+            localField : "_id",
+            foreignField : "subscriber",
+            as : "subscribedTo"
+        }
+    },
+    {
+        $addFields: {
+            subscriberCount : {
+                $size : "subscribers"
+            },
+            subscribedCount : {
+                $size : "subscribedTo"
+            },
+            isSubscribed : {
+                $cond : {
+                    if : {$in : [req.user?._id, "$subscribers.subscriber"]},
+                    then: true,
+                    else : false
+                }
+            }
+        }
+    },
+    {
+        $project : {
+            fullname : 1,
+            username : 1,
+            email : 1,
+            avatar : 1, 
+            coverImage : 1,
+            subscriber : 1,
+            channel : 1,
+            isSubscribed : 1,
+            subscriberCount :1,
+            subscribedCount : 1
+        }
+    }
+ ])
+
+ if(!Channel?.length){
+    throw new ApiResponse(400, "channel does not exist")
+ }
+
+ return res 
+ .status(200)
+ .json(new ApiResponse(200, Channel[0], "User channel fetched successfully"))
+})
+
 
 
 export  {registerUser,
@@ -340,5 +410,6 @@ export  {registerUser,
          getCurrentUser,
          changeAccountDetails,
          changeUserAvatar,
-         changeUserCoverImage
+         changeUserCoverImage,
+         getChannelProfile
 }
